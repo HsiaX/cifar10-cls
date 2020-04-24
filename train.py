@@ -52,7 +52,9 @@ criterion = config.loss_func
 optimizer = optim.SGD(net.parameters(), config.lr, momentum=0.9)
 # optimizer = torch.optim.RMSprop(net.parameters(), config.lr, alpha=0.9)
 # optimizer = torch.optim.Adam(net.parameters(), config.lr, betas=(0.9, 0.99))
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2, 3], gamma=0.80)
+# scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2, 3], gamma=0.80)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
+
 
 # 将打印信息保存至txt
 path = os.path.abspath(os.path.dirname(__file__))
@@ -87,6 +89,7 @@ for epoch in range(start_epoch, config.epoch):  # loop over the dataset multiple
         # print(outputs.data.shape, outputs.data.item())
         loss = criterion(outputs, labels)
         loss.backward()
+        optimizer.step()
 
         # print statistics
         loss_list.append(loss.item())
@@ -94,9 +97,10 @@ for epoch in range(start_epoch, config.epoch):  # loop over the dataset multiple
         if i % 10 == 9:
             print('Loss of epoch %-1s batch %-4s: %-10.9f' % (str(epoch + 1), str(i + 1), running_loss / 10))
             running_loss = 0.0
+        if i % 100 == 99:            # 每隔100batch更新学习率
+            scheduler.step()
+            lr_list.append(scheduler.get_lr()[0])
     time_list.append(time.clock() / 60 - sum(time_list))
-    scheduler.step()
-    lr_list.append(scheduler.get_lr())
     print('Epoch: %-5s learning rate: %-9.4f total run time: %-10.9f minutes' % (str(epoch + 1), lr_list[len(lr_list) - 1], time_list[len(time_list) - 1]))
 
     if epoch % config.save_gap == (config.save_gap - 1):
